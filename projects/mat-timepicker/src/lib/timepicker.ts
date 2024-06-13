@@ -1,7 +1,12 @@
-import { ChangeDetectionStrategy, Component, ViewEncapsulation } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ViewEncapsulation,
+} from '@angular/core';
 
 import { MatTimepickerBase, MatTimepickerControl } from './timepicker-base';
 import { MAT_SINGLE_TIME_SELECTION_MODEL_PROVIDER } from './time-selection-model';
+import { providePersistentProperties } from './persistent-properties';
 
 @Component({
   selector: 'mat-timepicker',
@@ -19,6 +24,11 @@ import { MAT_SINGLE_TIME_SELECTION_MODEL_PROVIDER } from './time-selection-model
   providers: [
     MAT_SINGLE_TIME_SELECTION_MODEL_PROVIDER,
     { provide: MatTimepickerBase, useExisting: MatTimepicker },
+    providePersistentProperties({ storage: localStorage, prefix: '[DUPA]' }),
   ],
 })
-export class MatTimepicker<T> extends MatTimepickerBase<MatTimepickerControl<T>, T | null, T> {}
+export class MatTimepicker<T> extends MatTimepickerBase<
+  MatTimepickerControl<T>,
+  T | null,
+  T
+> {}

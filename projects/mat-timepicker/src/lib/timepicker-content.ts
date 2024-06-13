@@ -1,4 +1,8 @@
-import { ComponentPortal, PortalModule, TemplatePortal } from '@angular/cdk/portal';
+import {
+  ComponentPortal,
+  PortalModule,
+  TemplatePortal,
+} from '@angular/cdk/portal';
 import { A11yModule } from '@angular/cdk/a11y';
 import {
   Component,
@@ -15,13 +19,17 @@ import { mixinColor } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Subject } from 'rxjs';
 
-import { ExtractTimeTypeFromSelection, MatTimeSelectionModel } from './time-selection-model';
+import {
+  ExtractTimeTypeFromSelection,
+  MatTimeSelectionModel,
+} from './time-selection-model';
 import { matTimepickerAnimations } from './timepicker-animations';
 import { MatTimepickerBase, TimepickerMode } from './timepicker-base';
 import { MatTimepickerIntl } from './timepicker-intl';
 import { MatClockDials } from './clock-dials';
 import { MatTimeInputs } from './time-inputs';
 import { TimepickerOrientation } from './orientation';
+import { PersistentProperties } from './persistent-properties';
 
 // Boilerplate for applying mixins to MatTimepickerContent.
 const _MatTimepickerContentBase = mixinColor(
@@ -33,7 +41,14 @@ const _MatTimepickerContentBase = mixinColor(
 @Component({
   selector: 'mat-timepicker-content',
   standalone: true,
-  imports: [CommonModule, PortalModule, A11yModule, MatTimeInputs, MatClockDials, MatButtonModule],
+  imports: [
+    CommonModule,
+    PortalModule,
+    A11yModule,
+    MatTimeInputs,
+    MatClockDials,
+    MatButtonModule,
+  ],
   templateUrl: './timepicker-content.html',
   styleUrls: ['./timepicker-content.scss'],
   exportAs: 'matTimepickerContent',
@@ -45,7 +60,10 @@ const _MatTimepickerContentBase = mixinColor(
     '(@transformPanel.done)': '_animationDone.next()',
     '[class.mat-timepicker-content-touch]': 'timepicker.touchUi',
   },
-  animations: [matTimepickerAnimations.transformPanel, matTimepickerAnimations.fadeInTimepicker],
+  animations: [
+    matTimepickerAnimations.transformPanel,
+    matTimepickerAnimations.fadeInTimepicker,
+  ],
 })
 export class MatTimepickerContent<S, T = ExtractTimeTypeFromSelection<S>>
   extends _MatTimepickerContentBase
@@ -61,7 +79,14 @@ export class MatTimepickerContent<S, T = ExtractTimeTypeFromSelection<S>>
   timepicker: MatTimepickerBase<any, S, T>;
 
   /** Display mode. */
-  mode: TimepickerMode;
+  get mode(): TimepickerMode {
+    return this._mode;
+  }
+
+  set mode(mode: TimepickerMode) {
+    this._mode = mode;
+    this._persistentProperties?.set('mode', mode);
+  }
 
   /** Current state of the animation. */
   _animationState: 'enter-dropdown' | 'enter-dialog' | 'void';
@@ -93,12 +118,15 @@ export class MatTimepickerContent<S, T = ExtractTimeTypeFromSelection<S>>
   /** Emits when an animation has finished. */
   readonly _animationDone = new Subject<void>();
 
+  private _mode: TimepickerMode;
+
   private _model: MatTimeSelectionModel<S, T>;
 
   constructor(
     elementRef: ElementRef,
     intl: MatTimepickerIntl,
     private _globalModel: MatTimeSelectionModel<S, T>,
+    private _persistentProperties: PersistentProperties,
     private _changeDetectorRef: ChangeDetectorRef,
   ) {
     super(elementRef);
@@ -106,7 +134,8 @@ export class MatTimepickerContent<S, T = ExtractTimeTypeFromSelection<S>>
   }
 
   ngOnInit() {
-    this._animationState = this.timepicker.openAs === 'dialog' ? 'enter-dialog' : 'enter-dropdown';
+    this._animationState =
+      this.timepicker.openAs === 'dialog' ? 'enter-dialog' : 'enter-dropdown';
   }
 
   ngAfterViewInit() {

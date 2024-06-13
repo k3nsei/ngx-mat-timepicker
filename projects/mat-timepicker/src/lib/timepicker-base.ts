@@ -13,6 +13,8 @@ import {
   InjectionToken,
   Optional,
   booleanAttribute,
+  inject,
+  Injector,
 } from '@angular/core';
 import { ThemePalette } from '@angular/material/core';
 import {
@@ -50,6 +52,7 @@ import {
 } from './time-selection-model';
 import { MAT_DEFAULT_ACITONS } from './timepicker-actions-default';
 import { TimepickerOrientation } from './orientation';
+import { PersistentProperties } from './persistent-properties';
 
 /** Possible options for the timepicker to open. */
 export type TimepickerOpenAs = 'dialog' | 'popup';
@@ -80,7 +83,7 @@ export interface MatTimepickerControl<T> {
 export interface MatTimepickerPanel<
   C extends MatTimepickerControl<T>,
   S,
-  T = ExtractTimeTypeFromSelection<S>
+  T = ExtractTimeTypeFromSelection<S>,
 > {
   /** Register an input with the timeepicker. */
   registerInput(input: C): MatTimeSelectionModel<S, T>;
@@ -113,7 +116,7 @@ export interface MatTimepickerDefaultOptions {
  */
 export const MAT_TIMEPICKER_DEFAULT_OPTIONS =
   new InjectionToken<MatTimepickerDefaultOptions>(
-    'MAT_TIMEPICKER_DEFAULT_OPTIONS'
+    'MAT_TIMEPICKER_DEFAULT_OPTIONS',
   );
 
 /** Default open as used by the timepicker. */
@@ -132,7 +135,7 @@ let timepickerUid = 0;
 export abstract class MatTimepickerBase<
   C extends MatTimepickerControl<T>,
   S,
-  T = ExtractTimeTypeFromSelection<S>
+  T = ExtractTimeTypeFromSelection<S>,
 > implements OnChanges
 {
   /** Whether the timepicker pop-up should be disabled. */
@@ -190,7 +193,12 @@ export abstract class MatTimepickerBase<
   /** Timepicker display mode. */
   @Input()
   get mode(): TimepickerMode {
-    return this._mode || this._defaults?.mode || DEFAULT_MODE;
+    return (
+      this._mode ||
+      this._persistentProperties?.get('mode') ||
+      this._defaults?.mode ||
+      DEFAULT_MODE
+    );
   }
   set mode(value: TimepickerMode) {
     this._mode = value;
@@ -295,6 +303,10 @@ export abstract class MatTimepickerBase<
     return this.timepickerInput && this.timepickerInput.max;
   }
 
+  private readonly _injector = inject(Injector);
+
+  private readonly _persistentProperties = inject(PersistentProperties);
+
   constructor(
     private _viewContainerRef: ViewContainerRef,
     private _overlay: Overlay,
@@ -305,7 +317,7 @@ export abstract class MatTimepickerBase<
     private _model: MatTimeSelectionModel<S, T>,
     @Optional()
     @Inject(MAT_TIMEPICKER_DEFAULT_OPTIONS)
-    private _defaults?: MatTimepickerDefaultOptions
+    private _defaults?: MatTimepickerDefaultOptions,
   ) {
     this._scrollStrategy = scrollStrategy;
 
@@ -346,7 +358,7 @@ export abstract class MatTimepickerBase<
 
     if (!this.timepickerInput) {
       throw Error(
-        'Attempted to open an MatTimepicker with no associated input.'
+        'Attempted to open an MatTimepicker with no associated input.',
       );
     }
 
@@ -384,7 +396,7 @@ export abstract class MatTimepickerBase<
   registerInput(input: C): MatTimeSelectionModel<S, T> {
     if (this.timepickerInput) {
       throw Error(
-        'A MatTimepicker can only be associated with a single input.'
+        'A MatTimepicker can only be associated with a single input.',
       );
     }
 
@@ -399,7 +411,7 @@ export abstract class MatTimepickerBase<
   registerActions(portal: TemplatePortal): void {
     if (this._actionsPortal) {
       throw Error(
-        'A MatTimepicker can only be associated with a single actions row.'
+        'A MatTimepicker can only be associated with a single actions row.',
       );
     }
     this._actionsPortal = portal;
@@ -444,7 +456,8 @@ export abstract class MatTimepickerBase<
     const isDialog = this.openAs === 'dialog';
     const portal = new ComponentPortal<MatTimepickerContent<S, T>>(
       MatTimepickerContent,
-      this._viewContainerRef
+      this._viewContainerRef,
+      this._injector,
     );
 
     const overlayRef = (this._overlayRef = this._overlay.create(
@@ -464,7 +477,7 @@ export abstract class MatTimepickerBase<
           ? this._overlay.scrollStrategies.block()
           : this._scrollStrategy(),
         panelClass: `mat-timepicker-${this.openAs}`,
-      })
+      }),
     ));
 
     this._getCloseStream(overlayRef).subscribe((event) => {
@@ -534,7 +547,7 @@ export abstract class MatTimepickerBase<
 
   /** Sets the positions of the timepicker in dropdown mode based on the current configuration. */
   private _setConnectedPositions(
-    strategy: FlexibleConnectedPositionStrategy
+    strategy: FlexibleConnectedPositionStrategy,
   ): FlexibleConnectedPositionStrategy {
     const primaryX = this.xPosition === 'end' ? 'end' : 'start';
     const secondaryX = primaryX === 'start' ? 'end' : 'start';
@@ -571,7 +584,7 @@ export abstract class MatTimepickerBase<
 
   /** Gets an observable that will emit when the overlay is supposed to be closed. */
   private _getCloseStream(
-    overlayRef: OverlayRef
+    overlayRef: OverlayRef,
   ): Observable<void | KeyboardEvent | MouseEvent> {
     return merge(
       overlayRef.backdropClick(),
@@ -585,8 +598,8 @@ export abstract class MatTimepickerBase<
               hasModifierKey(event, 'altKey') &&
               event.keyCode === UP_ARROW)
           );
-        })
-      )
+        }),
+      ),
     );
   }
 }
